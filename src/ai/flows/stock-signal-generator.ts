@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { getStockData } from '../tools/getStockDataTool';
 
 const StockSignalInputSchema = z.object({
   ticker: z.string().describe('The ticker symbol of the stock.'),
@@ -31,6 +32,10 @@ const StockSignalOutputSchema = z.object({
     .describe(
       'The overall buy/sell signal based on the three indicators (e.g., Strong Buy, Buy, Hold, Sell, Strong Sell).'
     ),
+  historicalData: z.array(z.object({
+    date: z.string(),
+    close: z.number(),
+  })).describe('Historical stock data for the last 252 days.')
 });
 export type StockSignalOutput = z.infer<typeof StockSignalOutputSchema>;
 
@@ -42,8 +47,16 @@ export async function generateStockSignal(
 
 const prompt = ai.definePrompt({
   name: 'stockSignalGeneratorPrompt',
-  input: {schema: StockSignalInputSchema},
-  output: {schema: StockSignalOutputSchema},
+  input: {schema: z.object({
+    ticker: StockSignalInputSchema.shape.ticker,
+    tradingStrategy: StockSignalInputSchema.shape.tradingStrategy,
+  })},
+  output: {schema: z.object({
+    indicator1: StockSignalOutputSchema.shape.indicator1,
+    indicator2: StockSignalOutputSchema.shape.indicator2,
+    indicator3: StockSignalOutputSchema.shape.indicator3,
+    signal: StockSignalOutputSchema.shape.signal,
+  })},
   prompt: `You are an AI assistant specializing in stock technical analysis.
 
   Based on the stock ticker and trading strategy provided, you will recommend three technical indicators and provide an overall buy/sell signal.
@@ -65,7 +78,18 @@ const stockSignalGeneratorFlow = ai.defineFlow(
     outputSchema: StockSignalOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    const [signalResult, historicalData] = await Promise.all([
+      prompt(input),
+      getStockData({ ticker: input.ticker }),
+    ]);
+
+    if (!signalResult.output) {
+      throw new Error("Failed to generate stock signal.");
+    }
+
+    return {
+      ...signalResult.output,
+      historicalData,
+    };
   }
 );

@@ -10,9 +10,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { generateStockSignal, StockSignalOutput } from '@/ai/flows/stock-signal-generator';
-import { Loader2, Bot, Wand2, Bell, Mail, BarChart, Star } from 'lucide-react';
+import { Loader2, Bot, Wand2, Bell, Mail, BarChart, Star, AreaChart } from 'lucide-react';
 import { Separator } from '../ui/separator';
-import Image from 'next/image';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
+import { format } from 'date-fns';
 
 const signalFormSchema = z.object({
   ticker: z.string().min(1, { message: '티커를 입력해주세요.' }).toUpperCase(),
@@ -76,6 +78,13 @@ export function TimingAnalysis() {
       });
     emailForm.reset();
   }
+
+  const chartConfig = {
+    close: {
+      label: "종가",
+      color: "hsl(var(--chart-1))",
+    },
+  };
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
@@ -153,13 +162,50 @@ export function TimingAnalysis() {
             <Separator className="bg-border/40 my-6" />
 
             <div className="space-y-4">
-                <h3 className="font-bold text-xl flex items-center gap-2"><BarChart className="h-5 w-5 text-accent"/>주가 차트 분석</h3>
-                <Card className="bg-background/30 p-4 text-center">
-                    <p data-ai-hint="stock chart" className="text-muted-foreground">
-                        📈 해당 종목의 상세 차트 및 과거 신호 분석 기능은 곧 제공될 예정입니다.
-                        <br />
-                        AI가 추천한 3가지 지표를 트레이딩뷰 등에서 설정하여 분석에 활용해보세요.
-                    </p>
+                <h3 className="font-bold text-xl flex items-center gap-2"><AreaChart className="h-5 w-5 text-accent"/>주가 차트 분석</h3>
+                 <Card className="bg-background/30 p-4 text-center h-[400px]">
+                  <ChartContainer config={chartConfig} className="w-full h-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={result.historicalData}
+                        margin={{
+                          top: 5, right: 20, left: -10, bottom: 5,
+                        }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.5)" />
+                        <XAxis
+                          dataKey="date"
+                          tickFormatter={(value) => format(new Date(value), "yy-MM-dd")}
+                          tickLine={false}
+                          axisLine={false}
+                          tickMargin={8}
+                          />
+                        <YAxis
+                          domain={['dataMin', 'dataMax']}
+                          tickFormatter={(value) => `$${value.toFixed(2)}`}
+                          tickLine={false}
+                          axisLine={false}
+                          tickMargin={8}
+                        />
+                        <Tooltip
+                          cursor={true}
+                          content={<ChartTooltipContent
+                            indicator="dot"
+                            labelFormatter={(label) => format(new Date(label), "yyyy-MM-dd")}
+                          />}
+                        />
+                        <Legend />
+                        <Line
+                          type="monotone"
+                          dataKey="close"
+                          stroke="hsl(var(--chart-1))"
+                          strokeWidth={2}
+                          dot={false}
+                          name="종가"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
                 </Card>
             </div>
           </CardContent>
