@@ -27,15 +27,15 @@ const emailFormSchema = z.object({
 
 const getSignalStyle = (signal: string) => {
     switch(signal) {
-        case 'Strong Buy':
+        case '강한 매수':
             return 'text-green-400 border-green-400';
-        case 'Buy':
+        case '매수':
             return 'text-green-300 border-green-300';
-        case 'Sell':
+        case '매도':
             return 'text-red-400 border-red-400';
-        case 'Strong Sell':
+        case '강한 매도':
             return 'text-red-500 border-red-500';
-        default: // Hold
+        default: // '보류'
             return 'text-gray-400 border-gray-400';
     }
 }
