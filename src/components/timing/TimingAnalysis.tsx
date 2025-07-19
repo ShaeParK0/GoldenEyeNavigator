@@ -82,7 +82,7 @@ export function TimingAnalysis() {
   const chartConfig = {
     close: {
       label: "종가",
-      color: "hsl(var(--chart-1))",
+      color: "hsl(var(--primary))",
     },
   };
 
@@ -198,7 +198,7 @@ export function TimingAnalysis() {
                         <Line
                           type="monotone"
                           dataKey="close"
-                          stroke="hsl(var(--chart-1))"
+                          stroke="hsl(var(--primary))"
                           strokeWidth={2}
                           dot={false}
                           name="종가"
