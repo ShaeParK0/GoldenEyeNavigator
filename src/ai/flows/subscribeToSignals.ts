@@ -10,6 +10,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { addSubscription } from '@/services/subscriptionService';
 import { sendWelcomeEmail } from '@/services/emailService';
+import { generateStockSignal } from './stock-signal-generator';
 
 const SubscriptionInputSchema = z.object({
     email: z.string().email().describe('The email address of the user.'),
@@ -33,11 +34,18 @@ const subscribeToSignalsFlow = ai.defineFlow(
     },
     async (input) => {
         try {
+            // First, generate the signal to get the indicators
+            const signalResult = await generateStockSignal({
+                ticker: input.ticker,
+                tradingStrategy: input.tradingStrategy
+            });
+            const indicators = [signalResult.indicator1, signalResult.indicator2, signalResult.indicator3];
+
             // Add subscription to the JSON file
             await addSubscription(input);
 
-            // Send a welcome email with strategy
-            await sendWelcomeEmail(input.email, input.ticker, input.tradingStrategy);
+            // Send a welcome email with the specific indicators
+            await sendWelcomeEmail(input.email, input.ticker, indicators);
 
             return {
                 success: true,
