@@ -12,12 +12,12 @@ import { z } from 'genkit';
 import { addSubscription } from '@/services/subscriptionService';
 import { sendWelcomeEmail } from '@/services/emailService';
 
-export const SubscriptionInputSchema = z.object({
+const SubscriptionInputSchema = z.object({
     email: z.string().email().describe('The email address of the user.'),
     ticker: z.string().describe('The stock ticker symbol to subscribe to.'),
     tradingStrategy: z.string().optional().describe('The trading strategy for the analysis.'),
 });
-export type SubscriptionInput = z.infer<typeof SubscriptionInputSchema>;
+type SubscriptionInput = z.infer<typeof SubscriptionInputSchema>;
 
 export async function subscribeToSignals(input: SubscriptionInput): Promise<{ success: boolean; message: string }> {
     return subscribeToSignalsFlow(input);
