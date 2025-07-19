@@ -1,1 +1,7 @@
-[]
+[
+  {
+    "email": "jsy830@naver.com",
+    "ticker": "MSFT",
+    "tradingStrategy": "과매도 구간에서 매수"
+  }
+]

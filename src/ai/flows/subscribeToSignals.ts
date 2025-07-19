@@ -4,7 +4,6 @@
  * @fileOverview Handles user subscriptions to daily stock signal emails.
  *
  * - subscribeToSignals - A function to subscribe a user to stock signal notifications.
- * - SubscriptionInput - The input type for the subscription function.
  */
 
 import { ai } from '@/ai/genkit';
@@ -37,8 +36,8 @@ const subscribeToSignalsFlow = ai.defineFlow(
             // Add subscription to the JSON file
             await addSubscription(input);
 
-            // Send a welcome email
-            await sendWelcomeEmail(input.email, input.ticker);
+            // Send a welcome email with strategy
+            await sendWelcomeEmail(input.email, input.ticker, input.tradingStrategy);
 
             return {
                 success: true,

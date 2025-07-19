@@ -17,8 +17,11 @@ const transporter = nodemailer.createTransport({
  * Sends a welcome email to a new subscriber.
  * @param email The recipient's email address.
  * @param ticker The stock ticker they subscribed to.
+ * @param tradingStrategy The trading strategy for the analysis.
  */
-export async function sendWelcomeEmail(email: string, ticker: string): Promise<void> {
+export async function sendWelcomeEmail(email: string, ticker: string, tradingStrategy?: string): Promise<void> {
+    const strategyText = tradingStrategy ? `<b>'${tradingStrategy}'</b> 전략을 사용하여` : 'AI가 추천하는 최적의 전략을 사용하여';
+
     const mailOptions = {
         from: `"GoldenLife Navigator" <${process.env.SMTP_USERNAME}>`,
         to: email,
@@ -27,6 +30,7 @@ export async function sendWelcomeEmail(email: string, ticker: string): Promise<v
             <div style="font-family: sans-serif; padding: 20px; color: #333;">
                 <h2>안녕하세요! GoldenLife Navigator입니다.</h2>
                 <p><b>${ticker}</b>에 대한 매일의 매매 신호 분석 알림을 성공적으로 구독하셨습니다.</p>
+                <p>앞으로 ${strategyText} 분석된 결과를 보내드리겠습니다.</p>
                 <p>매일 한국 시간(KST) 오전 5시에 분석 결과가 이메일로 발송될 예정입니다. (신호가 '보류'일 경우 제외)</p>
                 <p>감사합니다.</p>
             </div>
