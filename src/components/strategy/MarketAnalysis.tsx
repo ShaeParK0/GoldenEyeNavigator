@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { analyzeMarketInsight, MarketInsightOutput } from '@/ai/flows/market-insight-analyzer';
 import { Loader2, Bot, Newspaper, Lightbulb, BarChart3 } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
+import { Separator } from '@/components/ui/separator';
 
 const formSchema = z.object({
   marketNews: z.string().min(10, { message: '최소 10자 이상의 시장 동향을 입력해주세요.' }),
