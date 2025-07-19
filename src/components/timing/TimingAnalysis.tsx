@@ -49,10 +49,17 @@ export function TimingAnalysis() {
 
   const signalForm = useForm<z.infer<typeof signalFormSchema>>({
     resolver: zodResolver(signalFormSchema),
+    defaultValues: {
+      ticker: '',
+      tradingStrategy: '',
+    },
   });
 
   const emailForm = useForm<z.infer<typeof emailFormSchema>>({
     resolver: zodResolver(emailFormSchema),
+    defaultValues: {
+      email: '',
+    },
   });
 
   async function onSignalSubmit(values: z.infer<typeof signalFormSchema>) {
