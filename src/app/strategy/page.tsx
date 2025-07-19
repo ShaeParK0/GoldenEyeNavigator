@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import type { InvestmentStrategyOutput } from '@/ai/flows/investment-strategy-generator';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { MarketAnalysis } from '@/components/strategy/MarketAnalysis';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TrendingUp, CheckCircle, BarChart, BookOpen, BrainCircuit } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 
 export default function StrategyPage() {
   const [strategy, setStrategy] = useState<InvestmentStrategyOutput | null>(null);
@@ -26,11 +27,9 @@ export default function StrategyPage() {
         setName(storedName);
       } catch (e) {
         console.error("Failed to parse strategy from localStorage", e);
-        // If parsing fails, the data is corrupt, go back to survey
         router.push('/survey');
       }
     } else {
-      // If no data, redirect to survey to generate it
       router.push('/survey');
     }
     setLoading(false);
@@ -55,6 +54,30 @@ export default function StrategyPage() {
     );
   }
 
+  const allocationData = [
+    { name: '주식', value: strategy.assetAllocation.stocks, fill: 'hsl(var(--chart-1))' },
+    { name: '채권', value: strategy.assetAllocation.bonds, fill: 'hsl(var(--chart-2))' },
+    { name: '현금', value: strategy.assetAllocation.cash, fill: 'hsl(var(--chart-3))' },
+  ];
+
+  const chartConfig = {
+    value: {
+      label: "Value",
+    },
+    stocks: {
+      label: "주식",
+      color: "hsl(var(--chart-1))",
+    },
+    bonds: {
+      label: "채권",
+      color: "hsl(var(--chart-2))",
+    },
+    cash: {
+      label: "현금",
+      color: "hsl(var(--chart-3))",
+    },
+  };
+
   return (
     <div className="space-y-12">
       <div className="text-center">
@@ -73,16 +96,40 @@ export default function StrategyPage() {
               <CardDescription>추천 포트폴리오 구성</CardDescription>
             </div>
           </CardHeader>
-          <CardContent>
-            {strategy.assetAllocation ? (
-              <Image
-                src={strategy.assetAllocation}
-                alt="자산 배분 차트"
-                width={500}
-                height={300}
-                className="rounded-lg mx-auto border border-border"
-                data-ai-hint="pie chart"
-              />
+          <CardContent className="h-[300px]">
+             {strategy.assetAllocation ? (
+                <ChartContainer config={chartConfig} className="w-full h-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                            <Tooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+                            <Legend/>
+                            <Pie
+                                data={allocationData}
+                                dataKey="value"
+                                nameKey="name"
+                                cx="50%"
+                                cy="50%"
+                                outerRadius={80}
+                                labelLine={false}
+                                label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                                    const RADIAN = Math.PI / 180;
+                                    const radius = innerRadius + (outerRadius - innerRadius) * 1.2;
+                                    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                                    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                                    return (
+                                    <text x={x} y={y} fill="hsl(var(--foreground))" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
+                                        {`${(percent * 100).toFixed(0)}%`}
+                                    </text>
+                                    );
+                                }}
+                            >
+                                {allocationData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                                ))}
+                            </Pie>
+                        </PieChart>
+                    </ResponsiveContainer>
+                </ChartContainer>
             ) : <p className="text-muted-foreground">자산 배분 차트를 생성할 수 없습니다.</p>}
           </CardContent>
         </Card>

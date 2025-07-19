@@ -70,7 +70,11 @@ const InvestmentStrategyInputSchema = z.object({
 export type InvestmentStrategyInput = z.infer<typeof InvestmentStrategyInputSchema>;
 
 const InvestmentStrategyOutputSchema = z.object({
-  assetAllocation: z.string().describe('Recommended asset allocation as a pie chart (data URI).'),
+  assetAllocation: z.object({
+    stocks: z.number().describe('주식에 할당된 자산의 비율.'),
+    bonds: z.number().describe('채권에 할당된 자산의 비율.'),
+    cash: z.number().describe('현금에 할당된 자산의 비율.'),
+  }).describe('주식, 채권, 현금에 대한 추천 자산 배분 비율. 합계는 100이어야 합니다.'),
   etfStockRecommendations: z.array(
     z.object({
       ticker: z.string().describe('ETF or stock ticker symbol.'),
@@ -104,7 +108,7 @@ const prompt = ai.definePrompt({
 
   Provide the output in the following format:
 
-  - assetAllocation: Recommended asset allocation as a pie chart (data URI).
+  - assetAllocation: Recommended asset allocation with percentages for stocks, bonds, and cash. The sum must be 100.
   - etfStockRecommendations: An array of 3-4 recommended ETFs and stocks, each with a ticker symbol and brief rationale.
   - tradingStrategy: A concise overview of the trading strategy.
   - strategyExplanation: A more detailed explanation of the strategy.
