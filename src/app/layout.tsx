@@ -5,7 +5,7 @@ import { Footer } from '@/components/layout/Footer';
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: 'GoldenEye Navigator',
+  title: 'GoldenLife Navigator',
   description: 'Your personalized investment strategy guide.',
 };
 

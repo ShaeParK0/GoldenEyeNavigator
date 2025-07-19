@@ -1,4 +1,4 @@
-# **App Name**: GoldenEye Navigator
+# **App Name**: GoldenLife Navigator
 
 ## Core Features:
 

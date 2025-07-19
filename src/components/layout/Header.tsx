@@ -68,7 +68,7 @@ export function Header() {
         <Link href="/" className="mr-6 flex items-center space-x-2">
           <LogoIcon />
           <span className="font-bold font-headline text-lg text-primary sm:inline-block">
-            GoldenEye Navigator
+            GoldenLife Navigator
           </span>
         </Link>
         <nav className="flex items-center gap-4 text-sm lg:gap-6 ml-auto">
