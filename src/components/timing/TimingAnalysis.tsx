@@ -10,7 +10,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { generateStockSignal, StockSignalOutput } from '@/ai/flows/stock-signal-generator';
-import { Loader2, Bot, Wand2, Bell, Mail, BarChart, Star, AreaChart } from 'lucide-react';
+import { subscribeToSignals } from '@/ai/flows/subscribeToSignals';
+import { Loader2, Bot, Wand2, Bell, Mail, AreaChart } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
@@ -41,8 +42,9 @@ const getSignalStyle = (signal: string) => {
 }
 
 export function TimingAnalysis() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<StockSignalOutput & { ticker: string } | null>(null);
+  const [isSignalLoading, setIsSignalLoading] = useState(false);
+  const [isEmailLoading, setIsEmailLoading] = useState(false);
+  const [result, setResult] = useState<StockSignalOutput & { ticker: string; tradingStrategy?: string } | null>(null);
   const { toast } = useToast();
 
   const signalForm = useForm<z.infer<typeof signalFormSchema>>({
@@ -54,11 +56,11 @@ export function TimingAnalysis() {
   });
 
   async function onSignalSubmit(values: z.infer<typeof signalFormSchema>) {
-    setIsLoading(true);
+    setIsSignalLoading(true);
     setResult(null);
     try {
       const signalResult = await generateStockSignal(values);
-      setResult({ ...signalResult, ticker: values.ticker });
+      setResult({ ...signalResult, ticker: values.ticker, tradingStrategy: values.tradingStrategy });
     } catch (error) {
       console.error('Error generating stock signal:', error);
       toast({
@@ -67,16 +69,40 @@ export function TimingAnalysis() {
         description: "신호 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
       });
     } finally {
-      setIsLoading(false);
+      setIsSignalLoading(false);
     }
   }
 
-  function onEmailSubmit(values: z.infer<typeof emailFormSchema>) {
-    toast({
-        title: "알림 신청 완료",
-        description: `${values.email} 주소로 매매 신호 발생 시 알림을 보내드립니다.`,
-      });
-    emailForm.reset();
+  async function onEmailSubmit(values: z.infer<typeof emailFormSchema>) {
+    if (!result) return;
+    setIsEmailLoading(true);
+
+    try {
+        const response = await subscribeToSignals({
+            email: values.email,
+            ticker: result.ticker,
+            tradingStrategy: result.tradingStrategy,
+        });
+
+        toast({
+            title: response.success ? "알림 신청 완료" : "오류 발생",
+            description: response.message,
+            variant: response.success ? "default" : "destructive",
+        });
+
+        if(response.success) {
+            emailForm.reset();
+        }
+    } catch (error) {
+        console.error('Error subscribing to signals:', error);
+        toast({
+            variant: "destructive",
+            title: "오류 발생",
+            description: "알림 신청 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+        });
+    } finally {
+        setIsEmailLoading(false);
+    }
   }
 
   const chartConfig = {
@@ -125,8 +151,8 @@ export function TimingAnalysis() {
                 />
               </div>
               <div className="flex justify-end">
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? (
+                <Button type="submit" disabled={isSignalLoading}>
+                  {isSignalLoading ? (
                     <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> 분석 중...</>
                   ) : (
                     <><Wand2 className="mr-2 h-4 w-4" /> AI 기술 지표 추천받기</>
@@ -233,9 +259,12 @@ export function TimingAnalysis() {
                             </FormItem>
                         )}
                         />
-                        <Button type="submit">
-                            <Mail className="mr-2 h-4 w-4" />
-                            신청하기
+                        <Button type="submit" disabled={isEmailLoading}>
+                            {isEmailLoading ? (
+                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> 신청 중...</>
+                            ) : (
+                                <><Mail className="mr-2 h-4 w-4" /> 신청하기</>
+                            )}
                         </Button>
                     </form>
                 </Form>
