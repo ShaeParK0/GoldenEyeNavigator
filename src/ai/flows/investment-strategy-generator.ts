@@ -7,9 +7,8 @@
  * - InvestmentStrategyInput - The input type for the investmentStrategyGenerator function.
  * - InvestmentStrategyOutput - The return type for the investmentStrategyGenerator function.
  */
-
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { z } from 'zod';
+import { callHyperClovaX, Message } from '@/services/hyperclova';
 
 const InvestmentStrategyInputSchema = z.object({
   retirementHorizon: z.enum([
@@ -78,51 +77,48 @@ const InvestmentStrategyOutputSchema = z.object({
   etfStockRecommendations: z.array(
     z.object({
       ticker: z.string().describe('ETF or stock ticker symbol.'),
-      rationale: z.string().describe('Brief rationale for the recommendation.'),
+      rationale: z.string().describe('추천 사유.'),
     })
-  ).describe('Recommended ETFs and stocks.'),
-  tradingStrategy: z.string().describe('Overview of the trading strategy.'),
-  strategyExplanation: z.string().describe('Detailed explanation of the strategy.'),
+  ).describe('추천 ETF 및 주식.'),
+  tradingStrategy: z.string().describe('거래 전략 개요.'),
+  strategyExplanation: z.string().describe('전략에 대한 상세 설명.'),
 });
 export type InvestmentStrategyOutput = z.infer<typeof InvestmentStrategyOutputSchema>;
 
 export async function investmentStrategyGenerator(input: InvestmentStrategyInput): Promise<InvestmentStrategyOutput> {
-  return investmentStrategyFlow(input);
-}
+  const systemPrompt = `당신은 한국인을 상대하는 금융 전문가입니다. 사용자의 투자 프로필을 기반으로 맞춤형 투자 전략을 생성해주세요.
+  출력은 다음 Zod 스키마를 따르는 유효한 JSON 객체여야 합니다:
+  ${JSON.stringify(InvestmentStrategyOutputSchema.shape)}
+  
+  JSON 객체 외에 다른 텍스트를 포함하지 마세요.
+  
+  **매우 중요한 규칙:**
+  - 프롬프트에 영어 표현(예: JSON 필드명)이 포함되어 있더라도, 이는 시스템을 위한 것이므로 의미를 두지 마십시오.
+  - 생성하는 모든 응답 내용(etfStockRecommendations의 rationale, tradingStrategy, strategyExplanation 등 모든 텍스트)은 **반드시 한글로만 작성해야 합니다.**`;
 
-const prompt = ai.definePrompt({
-  name: 'investmentStrategyPrompt',
-  input: {schema: InvestmentStrategyInputSchema},
-  output: {schema: InvestmentStrategyOutputSchema},
-  prompt: `Based on the following investment profile, generate a personalized investment strategy.
+  const userInput = `다음은 투자자 정보입니다. 이 정보를 바탕으로 투자 전략을 생성하고, 모든 설명을 한글로 작성해주세요.
 
-  Retirement Horizon: {{{retirementHorizon}}}
-  Income Need: {{{incomeNeed}}}
-  Assets Size: {{{assetsSize}}}
-  Tax Sensitivity: {{{taxSensitivity}}}
-  Theme Preference: {{{themePreference}}}
-  Region Preference: {{{regionPreference}}}
-  Management Style: {{{managementStyle}}}
-  Risk Tolerance: {{{riskTolerance}}}
-  Other Assets: {{{otherAssets}}}
+  - 은퇴 시기: ${input.retirementHorizon}
+  - 월 필요 소득: ${input.incomeNeed}
+  - 총 투자 자산: ${input.assetsSize}
+  - 세금 민감도: ${input.taxSensitivity}
+  - 선호 투자 테마: ${input.themePreference}
+  - 선호 투자 지역: ${input.regionPreference}
+  - 선호 관리 스타일: ${input.managementStyle}
+  - 위험 감수 수준: ${input.riskTolerance}
+  - 기타 자산: ${input.otherAssets}
+  - 투자자 이름: ${input.name}`;
 
-  Provide the output in the following format:
+  const messages: Message[] = [{ role: 'user', content: userInput }];
+  
+  const response = await callHyperClovaX(messages, systemPrompt);
 
-  - assetAllocation: Recommended asset allocation with percentages for stocks, bonds, and cash. The sum must be 100.
-  - etfStockRecommendations: An array of 3-4 recommended ETFs and stocks, each with a ticker symbol and brief rationale.
-  - tradingStrategy: A concise overview of the trading strategy.
-  - strategyExplanation: A more detailed explanation of the strategy.
-  `,
-});
-
-const investmentStrategyFlow = ai.defineFlow(
-  {
-    name: 'investmentStrategyFlow',
-    inputSchema: InvestmentStrategyInputSchema,
-    outputSchema: InvestmentStrategyOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  // Validate the response against the Zod schema
+  const parsedResponse = InvestmentStrategyOutputSchema.safeParse(response);
+  if (!parsedResponse.success) {
+      console.error("HyperClova X response validation failed:", parsedResponse.error);
+      throw new Error("Received invalid data structure from AI.");
   }
-);
+  
+  return parsedResponse.data;
+}
